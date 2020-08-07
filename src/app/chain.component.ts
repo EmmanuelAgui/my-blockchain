@@ -5,7 +5,7 @@ import { NodeComponent } from "./node.component";
     selector: 'chain-component',
     template: `
         <div>
-            <button (click)="addNode()">Add Node</button>
+            <button (click)="addNode()">添加节点</button>
         </div>
 
         <node-component

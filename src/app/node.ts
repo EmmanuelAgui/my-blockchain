@@ -7,7 +7,7 @@ export interface Block{
     hash:string;
     prev:string;
     nonce:number;
-    index:number;
+    height:number;
     timestamp:number;
     minedBy:string;
 }
@@ -29,7 +29,7 @@ interface MineData{
 }
 
 export class Node{
-    static base:Block = {hash:0,index:-1} as any;
+    static base:Block = {hash:0,height:-1} as any;
 
     static connect(id:string,node:Node){
         const newNode = new Node(id);
@@ -89,7 +89,7 @@ export class Node{
 
     static validateParent(lastBlock:Block,block:Block){
         return lastBlock.hash === block.prev &&
-            lastBlock.index + 1 === block.index;
+            lastBlock.height + 1 === block.height;
     }
 
     static validateDifficulty(hash:string){
@@ -162,7 +162,7 @@ export class Node{
                 Node.validateChain(lastBlock,block) ? block :
                     this.invalidate(node.id) as any
                 , Node.base),
-            filter(block=>block.index > Node.getLastEvent(this.chain$).index)
+            filter(block=>block.height > Node.getLastEvent(this.chain$).height)
         ).subscribe(this.chain$)
     }
 
@@ -188,7 +188,7 @@ export class Node{
             nonce:0,
             minedBy:this.id,
             prev:lastBlock.hash,
-            index:lastBlock.index+1,
+            height:lastBlock.height+1,
             timestamp:Date.now()
         };
 

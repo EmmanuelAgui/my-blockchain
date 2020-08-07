@@ -37,7 +37,7 @@ import { scan } from 'rxjs/operators';
             <h3>{{id}}</h3>
 
             <input [(ngModel)]="data" name="value">
-            <button (click)="mine()">Mine</button>
+            <button (click)="mine()">挖矿</button>
 
             <h4>Connections</h4>
             <span *ngFor="let conn of node.connections$ | async" (click)="node.disconnect(conn.id)">{{conn.id}}</span>

@@ -22,8 +22,8 @@ import { Block } from "./node";
     <div>
       <table>
         <tr>
-          <th>Index</th>
-          <td>{{block.index}}</td>
+          <th>Height</th>
+          <td>{{block.height}}</td>
         </tr>
 
         <tr>
