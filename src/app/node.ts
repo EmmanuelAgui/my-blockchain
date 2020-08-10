@@ -32,6 +32,7 @@ export class Node{
     static base:Block = {hash:0,height:-1} as any;
 
     static connect(id:string,node:Node){
+        console.log('in static connect')
         const newNode = new Node(id);
         node.connect(newNode);
         newNode.connect(node);
@@ -41,6 +42,7 @@ export class Node{
     }
 
     static create(id:string){
+        console.log('in static create')
         const newNode = new Node(id);
         newNode.initChain('Genesis');
         newNode.listen();
@@ -49,20 +51,33 @@ export class Node{
     }
 
     static getEventHistory(replay$:ReplaySubject<Block>){
+        console.log('in static getEventHistory')
         const events = [];
 
-        replay$.pipe(takeUntil(timer(1))).subscribe(event=>events.push(event));
+        replay$.pipe(takeUntil(timer(1))).subscribe(event=>{
+            console.log('in replay$(chain$) subscribe,event:',event);
+            events.push(event)
+            console.log('in replay$(chain$) subscribe,events:',events);
+        });
 
-        return events;
+        function showEvents(){
+            console.log('the events:',events);
+        }
+        return {
+            showEvents:showEvents,
+            events
+        };
     }
 
     static getLastEvent(replay$:ReplaySubject<Block>){
-        const events = Node.getEventHistory(replay$);
+        console.log('in static getLastEvent')
+        const {events} = Node.getEventHistory(replay$);
 
         return events.length?events.pop():Node.base;
     }
 
     static validateChain(lastBlock:Block,block:Block){
+        console.log('in static validateChain')
         if(!lastBlock || !Node.validateBlock(lastBlock,block)){
             return;
         }
@@ -71,6 +86,7 @@ export class Node{
     }
 
     static validateBlock(lastBlock:Block,block:Block){
+        console.log('in static validateBlock')
         return (
             Node.validateParent(lastBlock,block) &&
             Node.validateDifficulty(block.hash) &&
@@ -79,6 +95,7 @@ export class Node{
     }
 
     static validateHash(block:Block){
+        console.log('in static validateHash')
         const { hash } = block;
         const tempBlock = {...block};
 
@@ -88,25 +105,31 @@ export class Node{
     }
 
     static validateParent(lastBlock:Block,block:Block){
+        console.log('in static validateParent')
         return lastBlock.hash === block.prev &&
             lastBlock.height + 1 === block.height;
     }
 
     static validateDifficulty(hash:string){
+        console.log('in static validateDifficulty')
         return /^00/.test(hash);
     }
 
     public chain$ = new ReplaySubject<Block>();
     public connections$ = new BehaviorSubject<Connection[]>([]);
     public mine$ = new BehaviorSubject<MineData>({_time:0} as any);
+    public test;
 
     constructor(public id:string){}
 
     initChain(data:any){
-        this.mine(data).subscribe(block=>this.chain$.next(block));
+        this.mine(data).subscribe(block=>{
+            console.log('in initChain',block);
+            this.chain$.next(block)});
     }
 
     process(data:any){
+        console.log('in process')
         this.mine$.next({
             data,
             _ref:this.id,
@@ -115,16 +138,25 @@ export class Node{
     }
 
     listen(){
+        console.log('in listen')
         this.mine$
             .pipe(
                 filter(event=>event&&event.data),
-                concatMap(({data})=>this.mine(data)),
+                concatMap(({data})=>{
+                    console.log('in mine$ of listen')
+                    return this.mine(data)
+                }),
                 filter(block=>Node.validateBlock(Node.getLastEvent(this.chain$),block)),
             ).subscribe(this.chain$)
     }
 
     connect(node:Node){
-        const history = Node.getEventHistory(node.chain$);
+        let self = this;
+        console.log('in connect,node:',node)
+
+        const {events:history,showEvents} = Node.getEventHistory(node.chain$);
+        console.log('in connect,history:',history)
+        self.test = showEvents;
 
         const isValid = !!history.reduce(Node.validateChain,Node.base);
 
@@ -142,31 +174,39 @@ export class Node{
     }
 
     invalidate(id:string){
+        console.log('in invalidate')
         this.disconnect(id);
 
         throw new Error(`Disconnected from node ${id}`);
     }
 
     connectMine(node:Node){
+        console.log('in connectMine,node:',node)
         return node.mine$.pipe(
             skip(1),
-            filter(event => event._ref !==  this.id),
+            filter(event => {
+                console.log('in other mine$ of connectMine')
+                return event._ref !==  this.id
+            }),
             filter(event => event._time > this.mine$.value._time)
         ).subscribe(this.mine$);
     }
 
     connectChain(node:Node){
+        console.log('in connectChain,node:',node)
         return node.chain$.pipe(
             distinctUntilKeyChanged('hash'),
-            scan((lastBlock,block) => 
-                Node.validateChain(lastBlock,block) ? block :
-                    this.invalidate(node.id) as any
+            scan((lastBlock,block) =>{ 
+                console.log(`in node.chain$ of connectChain,lastBlock:`,lastBlock,`block`,block)
+                return Node.validateChain(lastBlock,block) ? block :
+                    this.invalidate(node.id) as any}
                 , Node.base),
             filter(block=>block.height > Node.getLastEvent(this.chain$).height)
         ).subscribe(this.chain$)
     }
 
     disconnect(id:string){
+        console.log('in disconnect')
         const conn = this.connections$.value.find(item=>item.id===id);
 
         if(conn){
@@ -181,6 +221,7 @@ export class Node{
 
 
     mine(data:string){
+        console.log('in mine')
         const lastBlock = Node.getLastEvent(this.chain$);
 
         const block = {

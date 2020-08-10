@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { Node, Block } from './node';
 import { Observable } from 'rxjs';
-import { scan } from 'rxjs/operators';
+import { scan, tap } from 'rxjs/operators';
 
 @Component({
     styles:[`
@@ -65,13 +65,16 @@ export class NodeComponent implements OnInit {
         }else{
             this.node = Node.create(this.id);
         }
+        // this.node = Node.create(this.id)
 
         this.blocks = this.node.chain$.pipe(
+            tap(block=>console.log(`in NodeComponent chain$`,block)),
             scan((blocks,block)=>[block, ...blocks], []));
     }
 
     public mine(){
         this.node.process(this.data);
         this.data='';
+        this.node.test();
     }
 }
