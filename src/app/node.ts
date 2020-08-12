@@ -1,6 +1,6 @@
 import { SHA256 } from 'crypto-js';
 import { Subscription, interval, ReplaySubject, BehaviorSubject, timer } from 'rxjs';
-import { tap, map, first, filter, concatMap,  takeUntil, skip, distinctUntilKeyChanged, scan } from 'rxjs/operators';
+import { tap, map, first, filter, concatMap,  takeUntil, skip, distinctUntilKeyChanged, scan, distinctUntilChanged } from 'rxjs/operators';
 
 export interface Block{
     data:any;
@@ -57,7 +57,7 @@ export class Node{
         replay$.pipe(takeUntil(timer(1))).subscribe(event=>{
             console.log('in replay$(chain$) subscribe,event:',event);
             events.push(event)
-            console.log('in replay$(chain$) subscribe,events:',events);
+            // console.log('in replay$(chain$) subscribe,events:',events);
         });
 
         function showEvents(){
@@ -119,8 +119,13 @@ export class Node{
     public connections$ = new BehaviorSubject<Connection[]>([]);
     public mine$ = new BehaviorSubject<MineData>({_time:0} as any);
     public test;
+    public history=[]
 
-    constructor(public id:string){}
+    constructor(public id:string){
+        this.chain$.pipe(distinctUntilChanged()).subscribe(block=>{
+            console.log('in constructor chain$ subscribe,event:',event);
+            this.history.push(block)});
+    }
 
     initChain(data:any){
         this.mine(data).subscribe(block=>{
@@ -155,7 +160,8 @@ export class Node{
         console.log('in connect,node:',node)
 
         const {events:history,showEvents} = Node.getEventHistory(node.chain$);
-        console.log('in connect,history:',history)
+        console.log('in connect, event history:',history)
+        console.log('in connect, this.history:',this.history)
         self.test = showEvents;
 
         const isValid = !!history.reduce(Node.validateChain,Node.base);

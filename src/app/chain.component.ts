@@ -9,9 +9,9 @@ import { NodeComponent } from "./node.component";
         </div>
 
         <node-component
-            *ngFor="let id of nodes"
+            *ngFor="let id of nodes;last as isLast"
             [id]="id"
-            [parent]="lastNode?.node">
+            [parent]="testNode?.node">
         </node-component>
     `
 })
@@ -19,7 +19,7 @@ export class ChainComponent{
     public nodes = [];
 
     @ViewChild(NodeComponent)
-    public lastNode:NodeComponent=null;
+    public testNode:NodeComponent=null;
     
     constructor(){
         this.addNode();

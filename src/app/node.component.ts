@@ -61,6 +61,7 @@ export class NodeComponent implements OnInit {
 
     public ngOnInit(){
         if(this.parent){
+            console.log('NodeComponent ngOnInit')
             this.node = Node.connect(this.id,this.parent);
         }else{
             this.node = Node.create(this.id);
@@ -75,6 +76,6 @@ export class NodeComponent implements OnInit {
     public mine(){
         this.node.process(this.data);
         this.data='';
-        this.node.test();
+        // this.node.test();
     }
 }
