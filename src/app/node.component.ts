@@ -1,7 +1,8 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { Node, Block } from './node';
 import { Observable } from 'rxjs';
-import { scan, tap } from 'rxjs/operators';
+import { scan, tap, switchMap, concatMap } from 'rxjs/operators';
+import { IndexDbService } from './database.service';
 
 @Component({
     styles:[`
@@ -12,10 +13,14 @@ import { scan, tap } from 'rxjs/operators';
             margin: 10px 0;
         }
     
-        form, block-component {
+        form {
             display: inline-block;
         }
-        
+
+        .block{
+            display: inline-block;
+        }
+
         h3, h4 {
             margin: 5px 0;
         }
@@ -38,12 +43,17 @@ import { scan, tap } from 'rxjs/operators';
 
             <input [(ngModel)]="data" name="value">
             <button (click)="mine()">挖矿</button>
+            <button (click)="rebuild()">重建</button>
 
             <h4>Connections</h4>
             <span *ngFor="let conn of node.connections$ | async" (click)="node.disconnect(conn.id)">{{conn.id}}</span>
         </form>
   
-        <block-component *ngFor="let block of blocks | async" [block]="block"></block-component>
+        <block-component class="block" *ngFor="let block of blocks | async" [block]="block"></block-component>
+        <br>
+        <block-component class="ablock" *ngFor="let ablock of rebuildBlocks | async" [block]="ablock"></block-component>
+        
+
     `
 })
 export class NodeComponent implements OnInit {
@@ -58,6 +68,9 @@ export class NodeComponent implements OnInit {
     public data:string;
 
     public blocks:Observable<Block[]>
+    public rebuildBlocks:Observable<Block[]>
+
+    constructor(public indexDB:IndexDbService){}
 
     public ngOnInit(){
         if(this.parent){
@@ -71,11 +84,20 @@ export class NodeComponent implements OnInit {
         this.blocks = this.node.chain$.pipe(
             tap(block=>console.log(`in NodeComponent chain$`,block)),
             scan((blocks,block)=>[block, ...blocks], []));
+
+        // store in database
+        const inputStreamSub = this.node.chain$.pipe(concatMap(block =>this.indexDB.put('block',block))).subscribe()
     }
 
     public mine(){
         this.node.process(this.data);
         this.data='';
-        // this.node.test();
+    }
+
+    rebuild(){
+        // this.blocks = null;
+        this.rebuildBlocks = this.indexDB.query('block').pipe(
+            scan((blocks,block)=>[block,...blocks],[])
+        )
     }
 }

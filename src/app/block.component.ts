@@ -7,6 +7,10 @@ import { Block } from "./node";
       margin: 0 10px;
       border-collapse: collapse;
     }
+
+    .block{
+      display:inline-block;
+    }
     
     th, td {
       white-space: nowrap;
@@ -19,7 +23,7 @@ import { Block } from "./node";
   `],
   selector: 'block-component',
   template: `
-    <div>
+    <div class="block">
       <table>
         <tr>
           <th>Height</th>
